@@ -186,6 +186,7 @@ legend{font-family:'Barlow Condensed';font-weight:600;color:var(--navy);padding:
       <button onclick="showSection('enquiry')">Enquiry</button>
       <button onclick="showSection('contact')">Contact</button>
       <button class="admin-only" id="nav-proforma" style="display:none" onclick="showSection('proforma')">Proforma</button>
+      <button class="admin-only" id="nav-pdflayout" style="display:none" onclick="showSection('pdflayout')">PDF Layout</button>
       <button id="cart-btn" class="cart-btn" onclick="showSection('cart')">🛒 Cart (<span id="cart-count">0</span>)</button>
     </div>
   </div>
@@ -302,7 +303,7 @@ legend{font-family:'Barlow Condensed';font-weight:600;color:var(--navy);padding:
         <div class="form-row">
           <div class="col"><label>Buyer's Order No.</label><input id="pf-order-no"/></div>
           <div class="col"><label>Buyer's Order Date</label><input id="pf-order-date" type="date"/></div>
-          <div class="col"><label>Notify Party</label><input id="pf-notify"/></div>
+          <div class="col"><label>Notify Party</label><textarea id="pf-notify" style="min-height:70px"></textarea></div>
         </div>
       </fieldset>
 
@@ -313,7 +314,7 @@ legend{font-family:'Barlow Condensed';font-weight:600;color:var(--navy);padding:
           <div class="col"><label>GST No.</label><input id="pf-buyer-gst"/></div>
         </div>
         <div class="form-row">
-          <div class="col" style="flex:2"><label>Address</label><input id="pf-buyer-address"/></div>
+          <div class="col" style="flex:2"><label>Address</label><textarea id="pf-buyer-address" style="min-height:70px"></textarea></div>
           <div class="col"><label>State</label>
             <select id="pf-buyer-state"><option value="">Select state...</option></select>
           </div>
@@ -387,6 +388,100 @@ legend{font-family:'Barlow Condensed';font-weight:600;color:var(--navy);padding:
       <div class="actions">
         <button class="btn btn-amber" onclick="generateProformaPDF()">Generate Proforma PDF</button>
         <button class="btn-ghost" onclick="resetProformaForm()">Reset Form</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PDF LAYOUT SETTINGS (admin only) -->
+  <section id="pdflayout" style="display:none">
+    <h2>Proforma PDF Layout</h2>
+    <p style="font-size:.88rem;color:var(--steel)">Tune the size, spacing and font of each block on the generated Proforma PDF. Changes only apply after you click "Save Layout", and only affect PDFs generated from then on.</p>
+
+    <div class="form-card wide">
+      <fieldset>
+        <legend>General / Margins</legend>
+        <div class="form-row">
+          <div class="col"><label>Page Margin (mm)</label><input type="number" step="0.5" data-pdf-key="margin"/></div>
+          <div class="col"><label>Left Column Width (mm)</label><input type="number" step="1" data-pdf-key="leftColW"/></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Consignor / Invoice Info Box</legend>
+        <div class="form-row">
+          <div class="col"><label>Box Height (mm)</label><input type="number" step="1" data-pdf-key="consignorBoxH"/></div>
+          <div class="col"><label>Consignor Name Font Size</label><input type="number" step="0.1" data-pdf-key="consignorNameSize"/></div>
+          <div class="col"><label>Consignor Address Font Size</label><input type="number" step="0.1" data-pdf-key="consignorAddrSize"/></div>
+        </div>
+        <div class="form-row">
+          <div class="col"><label>Invoice Info Label Font Size</label><input type="number" step="0.1" data-pdf-key="invoiceLabelSize"/></div>
+          <div class="col"><label>Invoice Info Value Font Size</label><input type="number" step="0.1" data-pdf-key="invoiceValueSize"/></div>
+          <div class="col"><label>Bank Detail Label Font Size</label><input type="number" step="0.1" data-pdf-key="bankLabelSize"/></div>
+          <div class="col"><label>Bank Detail Text Font Size</label><input type="number" step="0.1" data-pdf-key="bankTextSize"/></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Consignee / Country / Notify Party Box</legend>
+        <div class="form-row">
+          <div class="col"><label>Minimum Box Height (mm)</label><input type="number" step="1" data-pdf-key="consigneeMinH"/></div>
+          <div class="col"><label>Consignee Name Font Size</label><input type="number" step="0.1" data-pdf-key="consigneeNameSize"/></div>
+          <div class="col"><label>Consignee Address Font Size</label><input type="number" step="0.1" data-pdf-key="consigneeAddrSize"/></div>
+        </div>
+        <div class="form-row">
+          <div class="col"><label>Notify Party Font Size</label><input type="number" step="0.1" data-pdf-key="notifySize"/></div>
+          <div class="col"><label>Country / Notify Label Font Size</label><input type="number" step="0.1" data-pdf-key="countryLabelSize"/></div>
+          <div class="col"><label>Country Value Font Size</label><input type="number" step="0.1" data-pdf-key="countryValueSize"/></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Shipment Detail Rows (Pre Carriage, Vessel, Port, Transport, etc.)</legend>
+        <div class="form-row">
+          <div class="col"><label>Row Height (mm)</label><input type="number" step="0.5" data-pdf-key="fieldRowH"/></div>
+          <div class="col"><label>Label Font Size</label><input type="number" step="0.1" data-pdf-key="fieldRowLabelSize"/></div>
+          <div class="col"><label>Value Font Size</label><input type="number" step="0.1" data-pdf-key="fieldRowValueSize"/></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Line Items Table</legend>
+        <div class="form-row">
+          <div class="col"><label>Header Font Size</label><input type="number" step="0.1" data-pdf-key="tableHeaderSize"/></div>
+          <div class="col"><label>Body Font Size</label><input type="number" step="0.1" data-pdf-key="tableBodySize"/></div>
+          <div class="col"><label>Cell Padding (mm)</label><input type="number" step="0.1" data-pdf-key="tableCellPad"/></div>
+        </div>
+        <div class="form-row">
+          <div class="col"><label>Sr. Column Width (mm)</label><input type="number" step="1" data-pdf-key="colSrW"/></div>
+          <div class="col"><label>HSN Column Width (mm)</label><input type="number" step="1" data-pdf-key="colHsnW"/></div>
+          <div class="col"><label>Total Units Column Width (mm)</label><input type="number" step="1" data-pdf-key="colUnitsW"/></div>
+          <div class="col"><label>Unit Price Column Width (mm)</label><input type="number" step="1" data-pdf-key="colUnitPriceW"/></div>
+        </div>
+        <div class="form-row">
+          <div class="col"><label>Taxable Amt Column Width (mm)</label><input type="number" step="1" data-pdf-key="colTaxableW"/></div>
+          <div class="col"><label>CGST/SGST/IGST Column Width (mm)</label><input type="number" step="1" data-pdf-key="colTaxW"/></div>
+          <div class="col"><label>Total Amount Column Width (mm)</label><input type="number" step="1" data-pdf-key="colTotalW"/></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Totals &amp; Footer</legend>
+        <div class="form-row">
+          <div class="col"><label>Totals Row Font Size</label><input type="number" step="0.1" data-pdf-key="totalsRowSize"/></div>
+          <div class="col"><label>"TOTAL AMOUNT" Banner Font Size</label><input type="number" step="0.1" data-pdf-key="totalBannerSize"/></div>
+          <div class="col"><label>Amount-in-Words Font Size</label><input type="number" step="0.1" data-pdf-key="wordsValueSize"/></div>
+          <div class="col"><label>Declaration Font Size</label><input type="number" step="0.1" data-pdf-key="declarationSize"/></div>
+        </div>
+        <div class="form-row">
+          <div class="col"><label>Signature Text Font Size</label><input type="number" step="0.1" data-pdf-key="signatureTextSize"/></div>
+          <div class="col"><label>Signature Caption Font Size</label><input type="number" step="0.1" data-pdf-key="signatureLabelSize"/></div>
+          <div class="col"><label>Page Number Font Size</label><input type="number" step="0.1" data-pdf-key="pageNumSize"/></div>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button class="btn btn-amber" onclick="savePdfLayout()">Save Layout</button>
+        <button class="btn-ghost" onclick="resetPdfLayout()">Reset to Defaults</button>
       </div>
     </div>
   </section>
@@ -608,6 +703,7 @@ function showSection(id){
   if(id==='products') renderCategories();
   if(id==='cart') renderCart();
   if(id==='proforma'){ if(role!=='admin'){ showSection('home'); return; } renderProformaItems(); }
+  if(id==='pdflayout'){ if(role!=='admin'){ showSection('home'); return; } renderPdfLayoutForm(); }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function navigateTo(id){ showSection(id); }
@@ -627,12 +723,15 @@ async function callAuthAPI(payload){
 function applyRoleUI(){
   const zone = document.getElementById('role-zone');
   const pfNav = document.getElementById('nav-proforma');
+  const layoutNav = document.getElementById('nav-pdflayout');
   if(role==='admin'){
     zone.innerHTML = `<span class="role-badge">ADMIN</span><button class="admin-link" onclick="openChangePassword()">Change Password</button><button class="admin-link" onclick="logoutAdmin()">Logout</button>`;
     pfNav.style.display = 'inline-block';
+    layoutNav.style.display = 'inline-block';
   } else {
     zone.innerHTML = `<button class="admin-link" onclick="openAdminLogin()">Admin</button>`;
     pfNav.style.display = 'none';
+    layoutNav.style.display = 'none';
   }
   if(document.getElementById('products').style.display==='block'){
     if(currentItemCode) renderItemDetail(currentItemCode);
@@ -1385,11 +1484,57 @@ function ensureSpace(doc, y, neededHeight, margin){
 }
 
 /* ---- PDF generation matching the supplied PI layout ---- */
+/* ================= PDF LAYOUT SETTINGS (admin-configurable) =================
+   Every size/spacing knob the Proforma PDF generator uses lives in this one
+   object instead of being hardcoded in generateProformaPDF(), so the admin
+   can retune the PDF from the "PDF Layout" screen without touching code. */
+const DEFAULT_PDF_LAYOUT = {
+  margin: 8, leftColW: 95,
+  consignorBoxH: 42, consignorNameSize: 9, consignorAddrSize: 7.8,
+  invoiceLabelSize: 6.5, invoiceValueSize: 8, bankLabelSize: 6.5, bankTextSize: 7,
+  consigneeMinH: 30, consigneeNameSize: 9, consigneeAddrSize: 7.8,
+  notifySize: 7.8, countryLabelSize: 6.5, countryValueSize: 8,
+  fieldRowH: 10, fieldRowLabelSize: 6.5, fieldRowValueSize: 8,
+  tableHeaderSize: 7, tableBodySize: 7, tableCellPad: 2,
+  colSrW: 9, colHsnW: 17, colUnitsW: 14, colUnitPriceW: 19, colTaxableW: 22, colTaxW: 11, colTotalW: 24,
+  totalsRowSize: 7, totalBannerSize: 9, wordsValueSize: 8, declarationSize: 7,
+  signatureTextSize: 8, signatureLabelSize: 7, pageNumSize: 8
+};
+function loadPdfLayout(){
+  try{ return Object.assign({}, DEFAULT_PDF_LAYOUT, JSON.parse(localStorage.getItem('sni_pdf_layout')||'{}')); }
+  catch(e){ return Object.assign({}, DEFAULT_PDF_LAYOUT); }
+}
+let PDF_LAYOUT = loadPdfLayout();
+function renderPdfLayoutForm(){
+  document.querySelectorAll('#pdflayout [data-pdf-key]').forEach(inp=>{
+    inp.value = PDF_LAYOUT[inp.dataset.pdfKey];
+  });
+}
+function savePdfLayout(){
+  const next = {};
+  document.querySelectorAll('#pdflayout [data-pdf-key]').forEach(inp=>{
+    const key = inp.dataset.pdfKey, v = parseFloat(inp.value);
+    next[key] = isNaN(v) ? DEFAULT_PDF_LAYOUT[key] : v;
+  });
+  PDF_LAYOUT = next;
+  localStorage.setItem('sni_pdf_layout', JSON.stringify(PDF_LAYOUT));
+  renderPdfLayoutForm();
+  showToast('PDF layout saved — new Proforma PDFs will use it');
+}
+function resetPdfLayout(){
+  if(!confirm('Reset all PDF layout settings to defaults?')) return;
+  localStorage.removeItem('sni_pdf_layout');
+  PDF_LAYOUT = Object.assign({}, DEFAULT_PDF_LAYOUT);
+  renderPdfLayoutForm();
+  showToast('PDF layout reset to defaults');
+}
+
 function generateProformaPDF(){
   if(proformaItems.length===0){ alert('Add at least one line item before generating the invoice.'); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'mm', format:'a4' });
-  const M=8, PW=210, CW=PW-2*M;
+  const L = PDF_LAYOUT;
+  const M=L.margin, PW=210, CW=PW-2*M;
   let y=M;
 
   doc.setDrawColor(90,113,132); doc.setLineWidth(0.15);
@@ -1397,15 +1542,17 @@ function generateProformaPDF(){
   // Title bar
   doc.setFontSize(13); doc.setFont(undefined,'bold');
   doc.text('PROFORMA INVOICE', PW/2, y+5, {align:'center'});
-  doc.setFontSize(8); doc.setFont(undefined,'normal');
-  doc.text('PAGE 1 of 1', PW-M, y+4, {align:'right'});
+  // The page number ("PAGE n of N") is stamped once at the very end of PDF
+  // generation, after the real page count is known — a placeholder used to
+  // be drawn here too, which sat directly underneath (and visually
+  // overlapped) that later, correct stamp. Removed rather than duplicated.
   y+=8; doc.line(M,y,PW-M,y); y+=2;
 
-  const leftW = 95, rightX = M+leftW+2, rightW = CW-leftW-2;
+  const leftW = L.leftColW, rightX = M+leftW+2, rightW = CW-leftW-2;
 
   function box(x,w,h){ doc.rect(x,y,w,h); }
-  function field(x,w,label,value,fs=8){
-    doc.setFontSize(6.5); doc.setTextColor(90,113,132);
+  function field(x,w,label,value,fs=L.invoiceValueSize,labelFs=L.invoiceLabelSize){
+    doc.setFontSize(labelFs); doc.setTextColor(90,113,132);
     doc.text(label,x+1.5,y+3);
     doc.setFontSize(fs); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
     doc.text(String(value||''),x+1.5,y+7,{maxWidth:w-3});
@@ -1413,12 +1560,12 @@ function generateProformaPDF(){
   }
 
   // ---- Row: Consignor | Invoice info ----
-  const topH=42;
+  const topH=L.consignorBoxH;
   box(M,leftW,topH);
-  doc.setFontSize(6.5); doc.setTextColor(90,113,132); doc.text('CONSIGNOR',M+1.5,y+4);
-  doc.setFontSize(9); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
+  doc.setFontSize(L.invoiceLabelSize); doc.setTextColor(90,113,132); doc.text('CONSIGNOR',M+1.5,y+4);
+  doc.setFontSize(L.consignorNameSize); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
   doc.text(INVOICE_CO.name, M+1.5, y+9, {maxWidth:leftW-3});
-  doc.setFont(undefined,'normal'); doc.setFontSize(7.8);
+  doc.setFont(undefined,'normal'); doc.setFontSize(L.consignorAddrSize);
   doc.text([INVOICE_CO.addr1, INVOICE_CO.addr2, INVOICE_CO.addr3, 'Mobile: '+INVOICE_CO.mobile, INVOICE_CO.website, INVOICE_CO.email, 'GST NO - '+INVOICE_CO.gst], M+1.5, y+14, {lineHeightFactor:1.35});
 
   box(rightX,rightW,topH);
@@ -1429,54 +1576,78 @@ function generateProformaPDF(){
   field(c3,c3w,'IEC', document.getElementById('pf-iec').value);
   doc.line(rightX,y+16,rightX+rightW,y+16);
   const orderVal = [document.getElementById('pf-order-no').value, document.getElementById('pf-order-date').value?('DT. '+fmtDate(document.getElementById('pf-order-date').value)):''].filter(Boolean).join(' ');
-  doc.setFontSize(6.5); doc.setTextColor(90,113,132); doc.text("BUYER'S ORDER NO. & DATE",rightX+1.5,y+19.5);
-  doc.setFontSize(8); doc.setTextColor(22,35,46); doc.text(orderVal, rightX+1.5, y+23,{maxWidth:rightW-3});
+  doc.setFontSize(L.invoiceLabelSize); doc.setTextColor(90,113,132); doc.text("BUYER'S ORDER NO. & DATE",rightX+1.5,y+19.5);
+  doc.setFontSize(L.invoiceValueSize); doc.setTextColor(22,35,46); doc.text(orderVal, rightX+1.5, y+23,{maxWidth:rightW-3});
   doc.line(rightX,y+25,rightX+rightW,y+25);
-  doc.setFontSize(6.5); doc.setTextColor(90,113,132); doc.text('BANK DETAIL',rightX+1.5,y+28.5);
-  doc.setFontSize(7); doc.setTextColor(22,35,46);
+  doc.setFontSize(L.bankLabelSize); doc.setTextColor(90,113,132); doc.text('BANK DETAIL',rightX+1.5,y+28.5);
+  doc.setFontSize(L.bankTextSize); doc.setTextColor(22,35,46);
   doc.text('Name of Bank: '+BANK.bank+'      Branch: '+BANK.branch, rightX+1.5, y+32);
   doc.text('A/c Holder: '+BANK.holder, rightX+1.5, y+35.5,{maxWidth:rightW-3});
   doc.text('A/c No: '+BANK.account+'   IFSC: '+BANK.ifsc+(BANK.swift?'   SWIFT: '+BANK.swift:''), rightX+1.5, y+39);
   y+=topH;
 
-  // ---- Row: Consignee | Country of Dispatch/Destination ----
-  const cH=30;
-  box(M,leftW,cH);
-  doc.setFontSize(6.5); doc.setTextColor(90,113,132); doc.text('CONSIGNEE',M+1.5,y+4);
-  doc.setFontSize(9); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
-  doc.text(document.getElementById('pf-buyer-name').value||'', M+1.5, y+9,{maxWidth:leftW-3});
-  doc.setFont(undefined,'normal'); doc.setFontSize(7.8);
+  // ---- Row: Consignee | Country of Dispatch/Destination + Notify Party ----
+  // Both the consignee block and the notify-party block wrap their text to
+  // fit the column width (preserving any manual line breaks the user typed),
+  // and the row height grows to fit whichever block needs more room, so
+  // nothing overflows its box border.
+  const consLineH = L.consigneeAddrSize*0.3528*1.3; // mm per line, matches font size / factor 1.3 used below
+  doc.setFont(undefined,'normal'); doc.setFontSize(L.consigneeAddrSize);
   const stSel = document.getElementById('pf-buyer-state');
   const stName = stSel.value==='__OUTSIDE_INDIA__' ? 'Outside India' : stSel.value;
-  doc.text([
-    document.getElementById('pf-buyer-address').value||'',
+  const addressLines = doc.splitTextToSize(document.getElementById('pf-buyer-address').value||'', leftW-3);
+  const consigneeLines = [
+    ...addressLines,
     stName||'',
     'PAN: '+(document.getElementById('pf-buyer-pan').value||'')+'   EXIM: '+(document.getElementById('pf-buyer-exim').value||''),
     'Phone: '+(document.getElementById('pf-buyer-phone').value||''),
     'GST No: '+(document.getElementById('pf-buyer-gst').value||'')
-  ], M+1.5, y+13,{lineHeightFactor:1.3});
+  ];
+  const consigneeH = 13 + consigneeLines.length*consLineH + 3;
+
+  const halfW=rightW/2;
+  doc.setFont(undefined,'bold'); doc.setFontSize(L.notifySize);
+  const notifyLines = doc.splitTextToSize(document.getElementById('pf-notify').value||'', rightW-3);
+  doc.setFont(undefined,'normal');
+  const notifyLineH = L.notifySize*0.3528*1.3;
+  const notifyH = 10 + 8 + notifyLines.length*notifyLineH + 3;
+
+  const cH = Math.max(L.consigneeMinH, consigneeH, notifyH);
+
+  box(M,leftW,cH);
+  doc.setFontSize(L.invoiceLabelSize); doc.setTextColor(90,113,132); doc.text('CONSIGNEE',M+1.5,y+4);
+  doc.setFontSize(L.consigneeNameSize); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
+  doc.text(document.getElementById('pf-buyer-name').value||'', M+1.5, y+9,{maxWidth:leftW-3});
+  doc.setFont(undefined,'normal'); doc.setFontSize(L.consigneeAddrSize);
+  doc.text(consigneeLines, M+1.5, y+13,{lineHeightFactor:1.3});
 
   box(rightX,rightW,cH);
-  const halfW=rightW/2;
   doc.line(rightX+halfW,y,rightX+halfW,y+10);
-  field(rightX,halfW,'COUNTRY OF DISPATCH', document.getElementById('pf-country-dispatch').value);
-  field(rightX+halfW,halfW,'COUNTRY OF FINAL DESTINATION', document.getElementById('pf-country-dest').value);
+  field(rightX,halfW,'COUNTRY OF DISPATCH', document.getElementById('pf-country-dispatch').value, L.countryValueSize, L.countryLabelSize);
+  field(rightX+halfW,halfW,'COUNTRY OF FINAL DESTINATION', document.getElementById('pf-country-dest').value, L.countryValueSize, L.countryLabelSize);
+  // Remaining space in this box (below Country of Dispatch/Destination) is used for Notify Party
+  const npY = y+10;
+  doc.line(rightX, npY, rightX+rightW, npY);
+  doc.setFontSize(L.countryLabelSize); doc.setTextColor(90,113,132); doc.text('NOTIFY PARTY', rightX+1.5, npY+4);
+  doc.setFontSize(L.notifySize); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
+  doc.text(notifyLines, rightX+1.5, npY+8, {lineHeightFactor:1.3});
+  doc.setFont(undefined,'normal');
   y+=cH;
 
   // ---- Row: Pre Carriage / Place of Receipt / Incoterm ----
-  y = fieldRow3(doc,M,CW,y,10,
+  y = fieldRow3(doc,M,CW,y,L.fieldRowH,
     ['PRE CARRIAGE BY','PLACE OF RECEIPT BY PRE CARRIER','FOB / C&F / CIF / CFR'],
     [document.getElementById('pf-pre-carriage').value, document.getElementById('pf-place-receipt').value, document.getElementById('pf-incoterm').value]);
 
   // ---- Row: Vessel / Port of Loading / Currency / Payment terms ----
-  y = fieldRow(doc,M,CW,y,10,
+  y = fieldRow(doc,M,CW,y,L.fieldRowH,
     [['VESSEL / FLIGHT NO.',document.getElementById('pf-vessel').value],
      ['PORT OF LOADING',document.getElementById('pf-port-loading').value],
      ['CURRENCY OF INVOICE',document.getElementById('pf-currency').value],
      ['PAYMENT TERMS',document.getElementById('pf-payment-terms').value]]);
 
   // ---- Row: Port of Discharge / Destination / Shipment of Goods / Brand ----
-  y = fieldRow(doc,M,CW,y,10,
+  y = fieldRow(doc,M,CW,y,L.fieldRowH,
     [['PORT OF DISCHARGE',document.getElementById('pf-port-discharge').value],
      ['DESTINATION',document.getElementById('pf-destination').value],
      ['SHIPMENT OF GOODS',document.getElementById('pf-shipment-goods').value],
@@ -1491,38 +1662,59 @@ function generateProformaPDF(){
     return [i+1, item.hsn, item.desc, `${item.qty} ${item.unit}`, formatINRPdf(item.unitPrice),
       formatINRPdf(c.taxable), formatPct(c.cgstPct, c.cgstApplicable), formatPct(c.sgstPct, c.sgstApplicable), formatPct(c.igstPct, c.igstApplicable), formatINRPdf(c.total)];
   });
-  const totalsRowCount = 4; // Taxable / CGST / SGST / IGST subtotal rows drawn in the foot
+  // Sr./HSN/Unit Price widened so short numeric/currency values ("10",
+  // "82041110", "Rs. 36.00") no longer wrap onto multiple lines within
+  // their own column. The extra width is taken from the auto-sized
+  // description column rather than from the other money columns.
+  const PF_COL_STYLES = {0:{cellWidth:L.colSrW,halign:'center'},1:{cellWidth:L.colHsnW},2:{cellWidth:'auto'},3:{cellWidth:L.colUnitsW,halign:'center'},4:{cellWidth:L.colUnitPriceW,halign:'right'},5:{cellWidth:L.colTaxableW,halign:'right'},6:{cellWidth:L.colTaxW,halign:'center'},7:{cellWidth:L.colTaxW,halign:'center'},8:{cellWidth:L.colTaxW,halign:'center'},9:{cellWidth:L.colTotalW,halign:'right'}};
+  const itemTableStartPage = doc.internal.getNumberOfPages();
   doc.autoTable({
     startY:y, margin:{left:M,right:M,top:PDF_TOP_GAP,bottom:16},
     head:[['Sr.','HSN','Variant, Item & Description','Total Units','Unit Price','Taxable Amt','CGST','SGST','IGST','Total Amount']],
     body,
     theme:'grid',
-    styles:{ fontSize:7, cellPadding:2, lineColor:[90,113,132], lineWidth:0.1, overflow:'linebreak' },
-    headStyles:{ fillColor:[231,236,240], textColor:[11,42,69], fontStyle:'bold', fontSize:7 },
-    // Description column widened (was 'auto' off a wider fixed budget); Unit
-    // Price and a few other numeric columns trimmed to free up that space so
-    // more line items' descriptions stay readable without wrapping as much,
-    // while still fitting more rows per page overall.
-    columnStyles:{0:{cellWidth:6,halign:'center'},1:{cellWidth:12},2:{cellWidth:'auto'},3:{cellWidth:14,halign:'center'},4:{cellWidth:15,halign:'right'},5:{cellWidth:22,halign:'right'},6:{cellWidth:11,halign:'center'},7:{cellWidth:11,halign:'center'},8:{cellWidth:11,halign:'center'},9:{cellWidth:24,halign:'right'}},
-    foot:[
-      ['','','','','Total Taxable Amount','','','','',formatINRPdf(t.taxable)],
-      ['','','','','CGST Amount','','','','',formatINRPdf(t.cgst)],
-      ['','','','','SGST Amount','','','','',formatINRPdf(t.sgst)],
-      ['','','','','IGST Amount','','','','',formatINRPdf(t.igst)],
+    styles:{ fontSize:L.tableBodySize, cellPadding:L.tableCellPad, lineColor:[90,113,132], lineWidth:0.1, overflow:'linebreak' },
+    headStyles:{ fillColor:[231,236,240], textColor:[11,42,69], fontStyle:'bold', fontSize:L.tableHeaderSize },
+    columnStyles: PF_COL_STYLES
+    // NOTE: deliberately no `foot` here. jspdf-autotable repeats a `foot`
+    // block on every page the table spans, which is why the Total
+    // Taxable/CGST/SGST/IGST amounts used to show up — identically — on
+    // every intermediate page. Those figures are only meaningful once, after
+    // the very last line item, so they're now drawn manually below instead.
+  });
+  y = doc.lastAutoTable.finalY+2;
+
+  // Stamp every page the item table spilled onto — except the one it
+  // actually finished on — with a "Continued on next page..." note, since
+  // the real subtotal is shown only once, right after the last line item.
+  const itemTableEndPage = doc.internal.getNumberOfPages();
+  for(let p=itemTableStartPage; p<itemTableEndPage; p++){
+    doc.setPage(p);
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setFontSize(7.5); doc.setFont(undefined,'italic'); doc.setTextColor(90,113,132);
+    doc.text('Continued on next page...', PW-M, pageHeight-6, {align:'right'});
+    doc.setFont(undefined,'normal');
+  }
+  doc.setPage(itemTableEndPage);
+
+  // ---- Grand totals (Taxable / CGST / SGST / IGST) — shown once, directly
+  // under the last row of the item table, using the sum across ALL items
+  // regardless of how many pages the table above spanned. ----
+  y = ensureSpace(doc, y, 26);
+  doc.autoTable({
+    startY:y, margin:{left:M,right:M,top:PDF_TOP_GAP,bottom:16},
+    body:[
+      [{content:'Total Taxable Amount', colSpan:9, styles:{halign:'right'}}, formatINRPdf(t.taxable)],
+      [{content:'CGST Amount', colSpan:9, styles:{halign:'right'}}, formatINRPdf(t.cgst)],
+      [{content:'SGST Amount', colSpan:9, styles:{halign:'right'}}, formatINRPdf(t.sgst)],
+      [{content:'IGST Amount', colSpan:9, styles:{halign:'right'}}, formatINRPdf(t.igst)],
     ],
-    // Make the subtotal rows visually distinct from the item rows (matches the
-    // steel-100 shaded totals block used on the Proforma section on screen)
-    // instead of blending into the item table above them. Row height here is
-    // driven by cellPadding (font is already small), so a tighter padding on
-    // just these 4 rows keeps them compact and leaves more room on the page
-    // for actual line items.
-    footStyles:{ fontStyle:'bold', textColor:[11,42,69], fillColor:[231,236,240], fontSize:7, cellPadding:{top:0.8,right:2,bottom:0.8,left:2}, lineWidth:0.15 },
-    didParseCell: function(data){
-      if(data.section==='foot'){
-        data.cell.styles.fillColor = [231,236,240];
-        if(data.column.index===4){ data.cell.styles.halign='right'; }
-        if(data.column.index===9){ data.cell.styles.halign='right'; data.cell.styles.textColor=[11,42,69]; data.cell.styles.fontStyle='bold'; }
-      }
+    theme:'grid',
+    styles:{ fontSize:L.totalsRowSize, cellPadding:{top:0.8,right:2,bottom:0.8,left:2}, lineColor:[90,113,132], lineWidth:0.15, fontStyle:'bold', textColor:[11,42,69] },
+    columnStyles: PF_COL_STYLES,
+    didParseCell:function(data){
+      data.cell.styles.fillColor = [231,236,240];
+      if(data.column.index===9){ data.cell.styles.textColor=[11,42,69]; data.cell.styles.fontStyle='bold'; }
     }
   });
   y = doc.lastAutoTable.finalY+2;
@@ -1533,26 +1725,26 @@ function generateProformaPDF(){
   const rounded = Math.round(t.total);
   y = ensureSpace(doc, y, 10);
   doc.setFillColor(217,143,30); doc.rect(M,y,CW,7,'F');
-  doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont(undefined,'bold');
+  doc.setTextColor(255,255,255); doc.setFontSize(L.totalBannerSize); doc.setFont(undefined,'bold');
   doc.text('TOTAL AMOUNT ('+(document.getElementById('pf-currency').value||'INR')+', Round off)', M+2, y+4.8);
   doc.text(formatINRPdf(rounded), PW-M-2, y+4.8, {align:'right'});
   doc.setFont(undefined,'normal'); doc.setTextColor(22,35,46);
   y+=10;
 
   y = ensureSpace(doc, y, 12);
-  doc.setFontSize(6.5); doc.setTextColor(90,113,132); doc.text('AMOUNT CHARGEABLE IN WORDS',M+1,y);
-  doc.setFontSize(8); doc.setTextColor(22,35,46);
+  doc.setFontSize(L.invoiceLabelSize); doc.setTextColor(90,113,132); doc.text('AMOUNT CHARGEABLE IN WORDS',M+1,y);
+  doc.setFontSize(L.wordsValueSize); doc.setTextColor(22,35,46);
   doc.text(amountInWords(rounded), M+1, y+4.5,{maxWidth:CW-2});
   y+=10;
 
   y = ensureSpace(doc, y, 8);
-  doc.setFontSize(7); doc.setTextColor(90,113,132);
+  doc.setFontSize(L.declarationSize); doc.setTextColor(90,113,132);
   doc.text('We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.', M+1, y);
   y+=5;
 
   // ---- Transport row ----
   y = ensureSpace(doc, y, 10);
-  y = fieldRow(doc,M,CW,y,10,
+  y = fieldRow(doc,M,CW,y,L.fieldRowH,
     [['TRANSPORT',document.getElementById('pf-transport').value],
      ["TRANSPORTER'S ID",document.getElementById('pf-transport-id').value],
      ['TOTAL PACKAGE',document.getElementById('pf-package').value],
@@ -1561,12 +1753,12 @@ function generateProformaPDF(){
   y+=6;
   y = ensureSpace(doc, y, 26);
   const sigW=CW/2;
-  doc.setFontSize(8); doc.setTextColor(22,35,46);
+  doc.setFontSize(L.signatureTextSize); doc.setTextColor(22,35,46);
   doc.text('For Customer', M+1, y);
   doc.text('FOR '+INVOICE_CO.name, M+sigW+1, y);
   doc.line(M,y+18,M+sigW-5,y+18);
   doc.line(M+sigW+1,y+18,PW-M,y+18);
-  doc.setFontSize(7); doc.setTextColor(90,113,132);
+  doc.setFontSize(L.signatureLabelSize); doc.setTextColor(90,113,132);
   doc.text('Signature with Date and Stamp', M+1, y+22);
   doc.text('Authorised Signatory', M+sigW+1, y+22);
 
@@ -1574,7 +1766,7 @@ function generateProformaPDF(){
   const pageCount = doc.internal.getNumberOfPages();
   for(let p=1; p<=pageCount; p++){
     doc.setPage(p);
-    doc.setFontSize(8); doc.setFont(undefined,'normal'); doc.setTextColor(22,35,46);
+    doc.setFontSize(L.pageNumSize); doc.setFont(undefined,'normal'); doc.setTextColor(22,35,46);
     doc.text('PAGE '+p+' of '+pageCount, PW-M, M+4, {align:'right'});
   }
 
@@ -1587,9 +1779,9 @@ function fieldRow(doc,x0,w,y,h,fields){
   doc.rect(x0,y,w,h);
   for(let i=1;i<n;i++) doc.line(x0+cw*i,y,x0+cw*i,y+h);
   fields.forEach((f,i)=>{
-    doc.setFontSize(6.5); doc.setTextColor(90,113,132);
+    doc.setFontSize(PDF_LAYOUT.fieldRowLabelSize); doc.setTextColor(90,113,132);
     doc.text(f[0], x0+cw*i+1.5, y+3.5);
-    doc.setFontSize(8); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
+    doc.setFontSize(PDF_LAYOUT.fieldRowValueSize); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
     doc.text(String(f[1]||''), x0+cw*i+1.5, y+7.5,{maxWidth:cw-3});
     doc.setFont(undefined,'normal');
   });
