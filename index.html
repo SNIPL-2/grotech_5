@@ -154,22 +154,6 @@ legend{font-family:'Barlow Condensed';font-weight:600;color:var(--navy);padding:
 .add-product-panel{background:#fff;border:1px solid var(--line);border-radius:4px;padding:14px;margin-bottom:14px}
 .add-product-panel .search-bar{margin:0 0 10px}
 
-/* proforma PDF layout editor — drag-to-resize mockup of page 1 */
-.pf-editor-outer{background:#DDE3E8;border:1px solid var(--line);border-radius:4px;padding:20px;overflow:auto}
-.pf-layout-editor{position:relative;background:#fff;margin:0 auto;box-shadow:0 1px 4px rgba(0,0,0,.12)}
-.pf-editor-box{position:absolute;border:1px solid var(--steel);background:rgba(231,236,240,.75);box-sizing:border-box;overflow:hidden}
-.pf-editor-box .pf-editor-label{position:absolute;top:2px;left:4px;font-size:8.5px;font-weight:700;color:var(--navy);font-family:'IBM Plex Mono',monospace;letter-spacing:.2px;pointer-events:none;line-height:1.3}
-.pf-editor-box .pf-editor-val{position:absolute;bottom:2px;right:4px;font-size:8.5px;color:var(--amber-dark);font-weight:600;font-family:'IBM Plex Mono',monospace;pointer-events:none;background:#fff;padding:0 2px;border-radius:2px}
-.pf-editor-handle-h{position:absolute;left:0;height:9px;cursor:ns-resize;z-index:6}
-.pf-editor-handle-h::after{content:'';position:absolute;left:0;right:0;top:3.5px;height:2px;background:var(--amber);opacity:.35;border-radius:1px}
-.pf-editor-handle-h:hover::after,.pf-editor-handle-h.dragging::after{opacity:1}
-.pf-editor-handle-v{position:absolute;top:0;width:9px;cursor:ew-resize;z-index:7}
-.pf-editor-handle-v::after{content:'';position:absolute;top:0;bottom:0;left:3.5px;width:2px;background:var(--amber);opacity:.35;border-radius:1px}
-.pf-editor-handle-v:hover::after,.pf-editor-handle-v.dragging::after{opacity:1}
-.pf-editor-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--steel);margin-top:8px}
-.pf-editor-legend span{display:inline-flex;align-items:center;gap:5px}
-.pf-editor-legend i{width:10px;height:10px;background:var(--amber);opacity:.6;border-radius:1px;display:inline-block}
-
 @media(max-width:760px){
   .hero-section h1{font-size:2.1rem}
   .form-row{flex-direction:column}
@@ -400,21 +384,6 @@ legend{font-family:'Barlow Condensed';font-weight:600;color:var(--navy);padding:
         <div class="pf-totals" id="pf-totals"></div>
       </fieldset>
 
-      <fieldset>
-        <legend>PDF Layout Editor</legend>
-        <p style="font-size:.85rem;color:var(--steel);margin:0 0 10px">Drag the amber edges to resize a box's height, or the vertical divider to resize the two columns. Everything reflows and saves automatically — nothing here is typed in.</p>
-        <div class="pf-editor-outer">
-          <div class="pf-layout-editor" id="pf-layout-editor"></div>
-        </div>
-        <div class="pf-editor-legend">
-          <span><i></i> drag an edge to resize</span>
-          <span>Boxes only ever grow taller than this if the typed-in text needs more room — dragging just sets the minimum.</span>
-        </div>
-        <div class="actions">
-          <button class="btn-sm btn-ghost" onclick="resetPFLayout()">↺ Reset Layout to Default</button>
-        </div>
-      </fieldset>
-
       <div class="actions">
         <button class="btn btn-amber" onclick="generateProformaPDF()">Generate Proforma PDF</button>
         <button class="btn-ghost" onclick="resetProformaForm()">Reset Form</button>
@@ -638,7 +607,7 @@ function showSection(id){
   document.getElementById(id).style.display = 'block';
   if(id==='products') renderCategories();
   if(id==='cart') renderCart();
-  if(id==='proforma'){ if(role!=='admin'){ showSection('home'); return; } renderProformaItems(); ensurePFLayoutEditorBuilt(); reflowPFEditor(); }
+  if(id==='proforma'){ if(role!=='admin'){ showSection('home'); return; } renderProformaItems(); }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function navigateTo(id){ showSection(id); }
@@ -706,7 +675,6 @@ function logoutAdmin(){
   applyRoleUI(); showSection('home');
 }
 applyRoleUI();
-loadPFLayout();
 
 /* ---- Change password (while logged in) ---- */
 function openChangePassword(){
@@ -1416,186 +1384,6 @@ function ensureSpace(doc, y, neededHeight, margin){
   return y;
 }
 
-/* ================= PROFORMA PDF LAYOUT EDITOR =================
-   Lets the admin resize (by dragging, never by typing) the boxes/rows on
-   page 1 of the generated Proforma PDF: the Consignor/Invoice row, the
-   Consignee box, the Country of Dispatch/Destination row, and the two
-   3-row shipment-terms grids. Saved to localStorage on this browser so it
-   persists across sessions. generateProformaPDF() reads these same values
-   when it draws the real PDF, using each as a MINIMUM height — if the
-   typed-in text needs more room than the dragged height allows, the box
-   still grows to fit it, so dragging can tighten whitespace but can never
-   clip text. */
-const PF_LAYOUT_DEFAULTS = {
-  leftColW: 95,       // width (mm) of the left column (Consignor/Consignee/left grid)
-  topRowH: 36,        // height (mm) of the Consignor / Invoice-Info row
-  consigneeMinH: 26,  // min height (mm) of the Consignee box
-  countryRowH: 10,    // height (mm) of the Country of Dispatch/Destination row
-  leftGridRowH: 10,   // height (mm) of EACH of the 3 left grid rows
-  rightGridRowH: 10   // height (mm) of EACH of the 3 right grid rows
-};
-let PF_LAYOUT = Object.assign({}, PF_LAYOUT_DEFAULTS);
-// Fixed estimate (mm) of the Notify Party text block's height, purely for
-// sizing the on-screen mockup — the real PDF always computes this fresh
-// from whatever text is actually typed into the Notify Party field.
-const PF_EDITOR_NOTIFY_BLOCK_H = 19.6;
-
-function loadPFLayout(){
-  try{
-    const saved = JSON.parse(localStorage.getItem('pf-pdf-layout')||'{}');
-    PF_LAYOUT = Object.assign({}, PF_LAYOUT_DEFAULTS, saved);
-  }catch(e){ PF_LAYOUT = Object.assign({}, PF_LAYOUT_DEFAULTS); }
-}
-function savePFLayout(){
-  try{ localStorage.setItem('pf-pdf-layout', JSON.stringify(PF_LAYOUT)); }catch(e){}
-}
-function resetPFLayout(){
-  PF_LAYOUT = Object.assign({}, PF_LAYOUT_DEFAULTS);
-  savePFLayout();
-  reflowPFEditor();
-}
-
-const PF_EDITOR_SCALE = 2.55; // px per mm on screen
-function pfMmToPx(mm){ return Math.round(mm*PF_EDITOR_SCALE); }
-
-let pfEditorBuilt = false;
-let pfEditorRefs = {};
-
-function ensurePFLayoutEditorBuilt(){
-  const wrap = document.getElementById('pf-layout-editor');
-  if(!wrap || pfEditorBuilt) return;
-  wrap.innerHTML =
-    '<div class="pf-editor-box" id="pfe-consignor"><span class="pf-editor-label">CONSIGNOR</span></div>'+
-    '<div class="pf-editor-box" id="pfe-invoice"><span class="pf-editor-label">INVOICE INFO / BANK DETAIL</span></div>'+
-    '<div class="pf-editor-box" id="pfe-consignee"><span class="pf-editor-label">CONSIGNEE</span><span class="pf-editor-val" id="pfe-val-consignee"></span></div>'+
-    '<div class="pf-editor-box" id="pfe-notify"><span class="pf-editor-label">NOTIFY PARTY (auto, up to 4 lines)</span></div>'+
-    '<div class="pf-editor-box" id="pfe-country"><span class="pf-editor-label">COUNTRY OF DISPATCH / FINAL DESTINATION</span><span class="pf-editor-val" id="pfe-val-country"></span></div>'+
-    '<div class="pf-editor-box" id="pfe-lgrid"><span class="pf-editor-label">PRE CARRIAGE · VESSEL/FLIGHT · PORT OF DISCHARGE rows (×3)</span><span class="pf-editor-val" id="pfe-val-lgrid"></span></div>'+
-    '<div class="pf-editor-box" id="pfe-rgrid"><span class="pf-editor-label">FOB/MODE · CURRENCY/PAYMENT · GOODS/BRAND rows (×3)</span><span class="pf-editor-val" id="pfe-val-rgrid"></span></div>'+
-    '<div class="pf-editor-handle-v" id="pfe-h-colsplit" title="Drag to resize the left/right column widths"></div>'+
-    '<div class="pf-editor-handle-h" id="pfe-h-toprow" title="Drag to resize the Consignor / Invoice Info row height"></div>'+
-    '<div class="pf-editor-handle-h" id="pfe-h-consignee" title="Drag to resize the Consignee box height"></div>'+
-    '<div class="pf-editor-handle-h" id="pfe-h-country" title="Drag to resize the Country of Dispatch/Destination row height"></div>'+
-    '<div class="pf-editor-handle-h" id="pfe-h-lgrid" title="Drag to resize these 3 rows"></div>'+
-    '<div class="pf-editor-handle-h" id="pfe-h-rgrid" title="Drag to resize these 3 rows"></div>';
-
-  pfEditorRefs = {
-    consignor: wrap.querySelector('#pfe-consignor'),
-    invoice: wrap.querySelector('#pfe-invoice'),
-    consignee: wrap.querySelector('#pfe-consignee'),
-    notify: wrap.querySelector('#pfe-notify'),
-    country: wrap.querySelector('#pfe-country'),
-    lgrid: wrap.querySelector('#pfe-lgrid'),
-    rgrid: wrap.querySelector('#pfe-rgrid'),
-    valConsignee: wrap.querySelector('#pfe-val-consignee'),
-    valCountry: wrap.querySelector('#pfe-val-country'),
-    valLgrid: wrap.querySelector('#pfe-val-lgrid'),
-    valRgrid: wrap.querySelector('#pfe-val-rgrid'),
-    hColSplit: wrap.querySelector('#pfe-h-colsplit'),
-    hTopRow: wrap.querySelector('#pfe-h-toprow'),
-    hConsignee: wrap.querySelector('#pfe-h-consignee'),
-    hCountry: wrap.querySelector('#pfe-h-country'),
-    hLgrid: wrap.querySelector('#pfe-h-lgrid'),
-    hRgrid: wrap.querySelector('#pfe-h-rgrid')
-  };
-
-  bindPFHandle(pfEditorRefs.hColSplit, {axis:'x', get:()=>PF_LAYOUT.leftColW, set:v=>PF_LAYOUT.leftColW=v, min:60, max:140});
-  bindPFHandle(pfEditorRefs.hTopRow, {axis:'y', get:()=>PF_LAYOUT.topRowH, set:v=>PF_LAYOUT.topRowH=v, min:24, max:60});
-  bindPFHandle(pfEditorRefs.hConsignee, {axis:'y', get:()=>PF_LAYOUT.consigneeMinH, set:v=>PF_LAYOUT.consigneeMinH=v, min:16, max:60});
-  bindPFHandle(pfEditorRefs.hCountry, {axis:'y', get:()=>PF_LAYOUT.countryRowH, set:v=>PF_LAYOUT.countryRowH=v, min:6, max:24});
-  bindPFHandle(pfEditorRefs.hLgrid, {axis:'y', get:()=>PF_LAYOUT.leftGridRowH*3, set:v=>PF_LAYOUT.leftGridRowH=v/3, min:24, max:90});
-  bindPFHandle(pfEditorRefs.hRgrid, {axis:'y', get:()=>PF_LAYOUT.rightGridRowH*3, set:v=>PF_LAYOUT.rightGridRowH=v/3, min:24, max:90});
-
-  pfEditorBuilt = true;
-}
-
-// Generic drag-to-resize binder. axis 'y' resizes by vertical drag distance,
-// axis 'x' by horizontal — in both cases the mm distance dragged is added
-// straight onto whatever get()/set() expose, so the same function covers a
-// simple height, a width, or (via get()/set() scaling by 3) a 3-row block.
-function bindPFHandle(el, opts){
-  let startClient, startVal, pid;
-  function onDown(e){
-    e.preventDefault();
-    pid = e.pointerId;
-    if(el.setPointerCapture) try{ el.setPointerCapture(pid); }catch(err){}
-    startClient = opts.axis==='x' ? e.clientX : e.clientY;
-    startVal = opts.get();
-    el.classList.add('dragging');
-    el.addEventListener('pointermove', onMove);
-    el.addEventListener('pointerup', onUp);
-    el.addEventListener('pointercancel', onUp);
-  }
-  function onMove(e){
-    const clientNow = opts.axis==='x' ? e.clientX : e.clientY;
-    const deltaMm = (clientNow-startClient)/PF_EDITOR_SCALE;
-    let v = startVal + deltaMm;
-    v = Math.max(opts.min, Math.min(opts.max, v));
-    opts.set(v);
-    reflowPFEditor();
-  }
-  function onUp(e){
-    el.classList.remove('dragging');
-    el.removeEventListener('pointermove', onMove);
-    el.removeEventListener('pointerup', onUp);
-    el.removeEventListener('pointercancel', onUp);
-    if(el.releasePointerCapture) try{ el.releasePointerCapture(pid); }catch(err){}
-    savePFLayout();
-  }
-  el.addEventListener('pointerdown', onDown);
-}
-
-function reflowPFEditor(){
-  if(!pfEditorBuilt) return;
-  const M=8, PW=210, CW=PW-2*M;
-  const leftW = PF_LAYOUT.leftColW;
-  const rightW = CW-leftW-2;
-  const topH = PF_LAYOUT.topRowH;
-  const consH = PF_LAYOUT.consigneeMinH;
-  const notifyBlockH = PF_EDITOR_NOTIFY_BLOCK_H;
-  const countryH = PF_LAYOUT.countryRowH;
-  const notifyH = notifyBlockH + countryH;
-  const lGridH = PF_LAYOUT.leftGridRowH;
-  const rGridH = PF_LAYOUT.rightGridRowH;
-  const leftStack = consH + lGridH*3;
-  const rightStack = notifyH + rGridH*3;
-  const totalH = topH + Math.max(leftStack, rightStack);
-
-  const wrap = document.getElementById('pf-layout-editor');
-  wrap.style.width = pfMmToPx(CW)+'px';
-  wrap.style.height = pfMmToPx(totalH)+'px';
-
-  function place(el,x,y,w,h){
-    el.style.left = pfMmToPx(x)+'px'; el.style.top = pfMmToPx(y)+'px';
-    el.style.width = pfMmToPx(w)+'px'; el.style.height = pfMmToPx(h)+'px';
-  }
-  place(pfEditorRefs.consignor, 0,0, leftW, topH);
-  place(pfEditorRefs.invoice, leftW+2,0, rightW, topH);
-  place(pfEditorRefs.consignee, 0,topH, leftW, consH);
-  place(pfEditorRefs.notify, leftW+2, topH, rightW, notifyBlockH);
-  place(pfEditorRefs.country, leftW+2, topH+notifyBlockH, rightW, countryH);
-  place(pfEditorRefs.lgrid, 0, topH+consH, leftW, lGridH*3);
-  place(pfEditorRefs.rgrid, leftW+2, topH+notifyH, rightW, rGridH*3);
-
-  function placeH(el,x,y,w){
-    el.style.left = pfMmToPx(x)+'px'; el.style.top = (pfMmToPx(y)-4)+'px'; el.style.width = pfMmToPx(w)+'px';
-  }
-  function placeV(el,x,y,h){
-    el.style.left = (pfMmToPx(x)-4)+'px'; el.style.top = pfMmToPx(y)+'px'; el.style.height = pfMmToPx(h)+'px';
-  }
-  placeV(pfEditorRefs.hColSplit, leftW+1, 0, totalH);
-  placeH(pfEditorRefs.hTopRow, 0, topH, CW);
-  placeH(pfEditorRefs.hConsignee, 0, topH+consH, leftW);
-  placeH(pfEditorRefs.hCountry, leftW+2, topH+notifyH, rightW);
-  placeH(pfEditorRefs.hLgrid, 0, topH+consH+lGridH*3, leftW);
-  placeH(pfEditorRefs.hRgrid, leftW+2, topH+notifyH+rGridH*3, rightW);
-
-  pfEditorRefs.valConsignee.textContent = consH.toFixed(1)+' mm min';
-  pfEditorRefs.valCountry.textContent = countryH.toFixed(1)+' mm';
-  pfEditorRefs.valLgrid.textContent = lGridH.toFixed(1)+' mm/row';
-  pfEditorRefs.valRgrid.textContent = rGridH.toFixed(1)+' mm/row';
-}
-
 /* ---- PDF generation matching the supplied PI layout ---- */
 function generateProformaPDF(){
   if(proformaItems.length===0){ alert('Add at least one line item before generating the invoice.'); return; }
@@ -1615,7 +1403,7 @@ function generateProformaPDF(){
   // overlapped) that later, correct stamp. Removed rather than duplicated.
   y+=8; doc.line(M,y,PW-M,y); y+=2;
 
-  const leftW = PF_LAYOUT.leftColW, rightX = M+leftW+2, rightW = CW-leftW-2;
+  const leftW = 95, rightX = M+leftW+2, rightW = CW-leftW-2;
 
   function box(x,w,h){ doc.rect(x,y,w,h); }
   function field(x,w,label,value,fs=8){
@@ -1648,7 +1436,7 @@ function generateProformaPDF(){
   // Height is set to what the content actually needs (7 address/contact
   // lines, tightened line spacing) instead of a fixed oversized box, so
   // there's no leftover blank space below the GST No. line.
-  const topH=PF_LAYOUT.topRowH;
+  const topH=36;
   box(M,leftW,topH);
   doc.setFontSize(6.5); doc.setTextColor(90,113,132); doc.text('CONSIGNOR',M+1.5,y+4);
   doc.setFontSize(9); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
@@ -1703,11 +1491,11 @@ function generateProformaPDF(){
   const notifyLineH = 7.8*0.3528*1.15;
   const notifyLines = doc.splitTextToSize(document.getElementById('pf-notify').value||'', rightW-3).slice(0,4); // max 4 lines
   const notifyBlockH = 4 + 4*notifyLineH + 2; // fixed, holds up to 4 lines regardless of actual length
-  const countryRowH = PF_LAYOUT.countryRowH;
+  const countryRowH = 10;
   const notifyH = notifyBlockH + countryRowH;
 
-  const leftBoxH = Math.max(PF_LAYOUT.consigneeMinH, consigneeH);
-  const rightBoxH = Math.max(20, notifyH);
+  const leftBoxH = Math.max(26, consigneeH);
+  const rightBoxH = Math.max(26, notifyH);
   const rowTopY = y;
 
   box(M,leftW,leftBoxH);
@@ -1735,7 +1523,7 @@ function generateProformaPDF(){
   // compact stacked pairs) continues immediately below Country of
   // Dispatch/Destination. Each column keeps its own running y so neither
   // one waits on the other.
-  const lGridRowH = PF_LAYOUT.leftGridRowH, rGridRowH = PF_LAYOUT.rightGridRowH;
+  const gRowH = 10;
   function leftGridRow(rowY,h,labelA,valA,labelB,valB){
     const halfL = leftW/2;
     doc.rect(M,rowY,halfL,h);
@@ -1754,24 +1542,24 @@ function generateProformaPDF(){
   }
 
   let ly = rowTopY + leftBoxH;
-  ly = leftGridRow(ly,lGridRowH,
+  ly = leftGridRow(ly,gRowH,
     'PRE CARRIAGE BY',document.getElementById('pf-pre-carriage').value,
     'PLACE OF RECEIPT BY PRE CARRIER',document.getElementById('pf-place-receipt').value);
-  ly = leftGridRow(ly,lGridRowH,
+  ly = leftGridRow(ly,gRowH,
     'VESSEL / FLIGHT NO.',document.getElementById('pf-vessel').value,
     'PORT OF LOADING',document.getElementById('pf-port-loading').value);
-  ly = leftGridRow(ly,lGridRowH,
+  ly = leftGridRow(ly,gRowH,
     'PORT OF DISCHARGE',document.getElementById('pf-port-discharge').value,
     'DESTINATION',document.getElementById('pf-destination').value);
 
   let ry = rowTopY + rightBoxH;
-  ry = rightGridRow(ry,rGridRowH,
+  ry = rightGridRow(ry,gRowH,
     'FOB / C&F / CIF / CFR',document.getElementById('pf-incoterm').value,
     'SEA / AIR / ROAD',document.getElementById('pf-mode').value);
-  ry = rightGridRow(ry,rGridRowH,
+  ry = rightGridRow(ry,gRowH,
     'CURRENCY OF INVOICE',document.getElementById('pf-currency').value,
     'PAYMENT TERMS',document.getElementById('pf-payment-terms').value);
-  ry = rightGridRow(ry,rGridRowH,
+  ry = rightGridRow(ry,gRowH,
     'SHIPMENT OF GOODS',document.getElementById('pf-shipment-goods').value,
     'BRAND NAME',document.getElementById('pf-brand').value);
 
