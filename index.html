@@ -1422,14 +1422,18 @@ function generateProformaPDF(){
     doc.text(String(value||''),x+1.5,rowY+7,{maxWidth:w-3});
     doc.setFont(undefined,'normal');
   }
-  // Compact label+value pair used for the half-height cells in the third
-  // (right-hand) column of the shipment-terms grid — two of these stack
-  // into the same height as one normal row.
+  // Compact label+value pair used for the cells in the third (right-hand)
+  // column of the shipment-terms grid. Value sits inline after the label
+  // (same line) instead of stacked below it, so each field only needs one
+  // text line's worth of height — two of these stack into one row.
   function compactField(x,w,label,value,rowY,subH=5){
-    doc.setFontSize(5.5); doc.setTextColor(90,113,132); doc.setFont(undefined,'normal');
-    doc.text(label, x+1.5, rowY+2.4);
-    doc.setFontSize(7); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
-    doc.text(String(value||''), x+1.5, rowY+subH-1.4, {maxWidth:w-3});
+    const cy = rowY + subH/2 + 1.4;
+    doc.setFontSize(6.3); doc.setTextColor(90,113,132); doc.setFont(undefined,'normal');
+    const lbl = label+':';
+    doc.text(lbl, x+1.5, cy);
+    const lw = doc.getTextWidth(lbl);
+    doc.setFontSize(7.6); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
+    doc.text(String(value||''), x+1.5+lw+1.5, cy, {maxWidth:w-3-lw-1.5});
     doc.setFont(undefined,'normal');
   }
   // ---- Row: Consignor | Invoice info ----
@@ -1473,8 +1477,8 @@ function generateProformaPDF(){
   // FOB/SEA-AIR-ROAD/etc. fields sit directly under Country of
   // Dispatch/Destination with no gap, and the Pre Carriage/Vessel/Port
   // Discharge fields sit directly under Consignee with no gap either.
-  const consLineH = 7.8*0.3528*1.15; // mm per line — tightened from factor 1.3 so the
-  // Consignee box wraps its own text closely instead of leaving a gap below the last line
+  const consLineH = 7.8*0.3528*1.22; // mm per line — a touch looser than the previous
+  // 1.15 (which read as cramped), still tighter than the original 1.3 that left a gap
   doc.setFont(undefined,'normal'); doc.setFontSize(7.8);
   const stSel = document.getElementById('pf-buyer-state');
   const stName = stSel.value==='__OUTSIDE_INDIA__' ? 'Outside India' : stSel.value;
@@ -1486,7 +1490,7 @@ function generateProformaPDF(){
     'Phone: '+(document.getElementById('pf-buyer-phone').value||''),
     'GST No: '+(document.getElementById('pf-buyer-gst').value||'')
   ];
-  const consigneeH = 13 + consigneeLines.length*consLineH + 0.5;
+  const consigneeH = 13 + consigneeLines.length*consLineH + 1.2;
 
   const halfW=rightW/2;
   const notifyLineH = 7.8*0.3528*1.15;
@@ -1504,7 +1508,7 @@ function generateProformaPDF(){
   doc.setFontSize(9); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
   doc.text(document.getElementById('pf-buyer-name').value||'', M+1.5, y+9,{maxWidth:leftW-3});
   doc.setFont(undefined,'normal'); doc.setFontSize(7.8);
-  doc.text(consigneeLines, M+1.5, y+13,{lineHeightFactor:1.15});
+  doc.text(consigneeLines, M+1.5, y+13,{lineHeightFactor:1.22});
 
   doc.rect(rightX,rowTopY,rightW,rightBoxH);
   doc.setFontSize(6.5); doc.setTextColor(90,113,132); doc.text('NOTIFY PARTY', rightX+1.5, rowTopY+4);
@@ -1524,13 +1528,13 @@ function generateProformaPDF(){
   // compact stacked pairs) continues immediately below Country of
   // Dispatch/Destination. Each column keeps its own running y so neither
   // one waits on the other.
-  // Left grid rows hold ONE label+value per row, so they only need enough
-  // height for a single line — 14mm left them with dead space at the
-  // bottom. Right grid rows stack TWO label+value pairs per row, so they
-  // need roughly double a single row's height to give each pair the same
-  // breathing room the left side gets.
+  // Left grid rows hold ONE label+value per row; right grid rows stack TWO
+  // label+value pairs, but now that each pair renders inline (label then
+  // value on the same line, via compactField) both sides need the same
+  // per-row height, so the two columns end together instead of the right
+  // side running taller.
   const gRowHNarrow = 10;
-  const gRowHWide = 18;
+  const gRowHWide = 10;
   function leftGridRow(rowY,h,labelA,valA,labelB,valB){
     const halfL = leftW/2;
     doc.rect(M,rowY,halfL,h);
