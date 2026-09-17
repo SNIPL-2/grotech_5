@@ -1425,11 +1425,11 @@ function generateProformaPDF(){
   // Compact label+value pair used for the half-height cells in the third
   // (right-hand) column of the shipment-terms grid — two of these stack
   // into the same height as one normal row.
-  function compactField(x,w,label,value,rowY){
+  function compactField(x,w,label,value,rowY,subH=5){
     doc.setFontSize(5.5); doc.setTextColor(90,113,132); doc.setFont(undefined,'normal');
-    doc.text(label, x+1.5, rowY+2.2);
+    doc.text(label, x+1.5, rowY+2.4);
     doc.setFontSize(7); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
-    doc.text(String(value||''), x+1.5, rowY+5, {maxWidth:w-3});
+    doc.text(String(value||''), x+1.5, rowY+subH-1.4, {maxWidth:w-3});
     doc.setFont(undefined,'normal');
   }
   // ---- Row: Consignor | Invoice info ----
@@ -1523,7 +1523,10 @@ function generateProformaPDF(){
   // compact stacked pairs) continues immediately below Country of
   // Dispatch/Destination. Each column keeps its own running y so neither
   // one waits on the other.
-  const gRowH = 10;
+  const gRowH = 14; // was 10 — the right-hand grid stacks two fields per row, and
+  // at h=10 (5mm per field) the value text sat right on top of the divider
+  // line, looking cramped/cluttered. 14 (7mm per field) gives each
+  // label+value pair real breathing room.
   function leftGridRow(rowY,h,labelA,valA,labelB,valB){
     const halfL = leftW/2;
     doc.rect(M,rowY,halfL,h);
@@ -1535,9 +1538,9 @@ function generateProformaPDF(){
   function rightGridRow(rowY,h,labelC1,valC1,labelC2,valC2){
     doc.rect(rightX,rowY,rightW,h);
     const subH = h/2;
-    compactField(rightX,rightW,labelC1,valC1,rowY);
+    compactField(rightX,rightW,labelC1,valC1,rowY,subH);
     doc.line(rightX,rowY+subH,rightX+rightW,rowY+subH);
-    compactField(rightX,rightW,labelC2,valC2,rowY+subH);
+    compactField(rightX,rightW,labelC2,valC2,rowY+subH,subH);
     return rowY+h;
   }
 
