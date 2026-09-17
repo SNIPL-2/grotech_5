@@ -1422,16 +1422,16 @@ function generateProformaPDF(){
     doc.text(String(value||''),x+1.5,rowY+7,{maxWidth:w-3});
     doc.setFont(undefined,'normal');
   }
-  // A 2-column row whose column widths match the Consignor/Consignee split
-  // (leftW | rightW), used for the Pre Carriage/Vessel/Port fields below.
-  function twoColRow(rowY,h,labelL,valL,labelR,valR){
-    doc.rect(M,rowY,leftW,h);
-    doc.rect(rightX,rowY,rightW,h);
-    rowField(M,leftW,labelL,valL,rowY);
-    rowField(rightX,rightW,labelR,valR,rowY);
-    return rowY+h;
+  // Compact label+value pair used for the half-height cells in the third
+  // (right-hand) column of the shipment-terms grid — two of these stack
+  // into the same height as one normal row.
+  function compactField(x,w,label,value,rowY){
+    doc.setFontSize(5.5); doc.setTextColor(90,113,132); doc.setFont(undefined,'normal');
+    doc.text(label, x+1.5, rowY+2.2);
+    doc.setFontSize(7); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
+    doc.text(String(value||''), x+1.5, rowY+5, {maxWidth:w-3});
+    doc.setFont(undefined,'normal');
   }
-
   // ---- Row: Consignor | Invoice info ----
   // Height is set to what the content actually needs (7 address/contact
   // lines, tightened line spacing) instead of a fixed oversized box, so
@@ -1462,18 +1462,22 @@ function generateProformaPDF(){
   doc.text('A/c No: '+BANK.account+'   IFSC: '+BANK.ifsc+(BANK.swift?'   SWIFT: '+BANK.swift:''), rightX+1.5, y+33);
   y+=topH;
 
-  // ---- Row: Consignee | Country of Dispatch/Destination + Notify Party + shipment-terms fields ----
-  // The consignee block wraps to fit the column width and the row grows to
-  // fit whichever side needs more room, same as before. Notify Party is now
-  // capped at 4 lines (instead of growing without limit), and the six
-  // shipment-terms fields (Incoterm, mode, currency, payment terms, goods,
-  // brand) sit directly below it, in their own row each, matching the row
-  // height used for the Pre Carriage/Vessel/Port grid further down.
+  // ---- Row: Consignee | Notify Party + Country of Dispatch/Destination ----
+  // Consignee address is capped to 3 lines and Notify Party to 4 lines, so
+  // neither block can grow unbounded. The left (Consignee) and right
+  // (Notify Party + Country) columns are then sized to their OWN content
+  // instead of being forced to a shared, taller height — that mismatch was
+  // what left a slab of dead white space under the shorter column. The two
+  // columns start at the same y but can end at different y's; the
+  // shipment-terms grid below tracks each column's own bottom, so the
+  // FOB/SEA-AIR-ROAD/etc. fields sit directly under Country of
+  // Dispatch/Destination with no gap, and the Pre Carriage/Vessel/Port
+  // Discharge fields sit directly under Consignee with no gap either.
   const consLineH = 7.8*0.3528*1.3; // mm per line, matches font 7.8pt / factor 1.3 used below
   doc.setFont(undefined,'normal'); doc.setFontSize(7.8);
   const stSel = document.getElementById('pf-buyer-state');
   const stName = stSel.value==='__OUTSIDE_INDIA__' ? 'Outside India' : stSel.value;
-  const addressLines = doc.splitTextToSize(document.getElementById('pf-buyer-address').value||'', leftW-3);
+  const addressLines = doc.splitTextToSize(document.getElementById('pf-buyer-address').value||'', leftW-3).slice(0,3); // max 3 lines
   const consigneeLines = [
     ...addressLines,
     stName||'',
@@ -1481,60 +1485,85 @@ function generateProformaPDF(){
     'Phone: '+(document.getElementById('pf-buyer-phone').value||''),
     'GST No: '+(document.getElementById('pf-buyer-gst').value||'')
   ];
-  const consigneeH = 13 + consigneeLines.length*consLineH + 3;
+  const consigneeH = 13 + consigneeLines.length*consLineH + 2;
 
   const halfW=rightW/2;
   const notifyLineH = 7.8*0.3528*1.15;
   const notifyLines = doc.splitTextToSize(document.getElementById('pf-notify').value||'', rightW-3).slice(0,4); // max 4 lines
-  const notifyBlockH = 4 + 4*notifyLineH + 3; // fixed, holds up to 4 lines regardless of actual length
+  const notifyBlockH = 4 + 4*notifyLineH + 2; // fixed, holds up to 4 lines regardless of actual length
+  const countryRowH = 10;
+  const notifyH = notifyBlockH + countryRowH;
 
-  const cFields = [
-    ['FOB / C&F / CIF / CFR', document.getElementById('pf-incoterm').value],
-    ['SEA / AIR / ROAD', document.getElementById('pf-mode').value],
-    ['CURRENCY OF INVOICE', document.getElementById('pf-currency').value],
-    ['PAYMENT TERMS', document.getElementById('pf-payment-terms').value],
-    ['SHIPMENT OF GOODS', document.getElementById('pf-shipment-goods').value],
-    ['BRAND NAME', document.getElementById('pf-brand').value]
-  ];
-  const cRowH = 9; // matches the row height used for the Pre Carriage/Vessel/Port grid below
+  const leftBoxH = Math.max(26, consigneeH);
+  const rightBoxH = Math.max(26, notifyH);
+  const rowTopY = y;
 
-  const rightTotalH = 10 + notifyBlockH + cFields.length*cRowH; // country row + notify + 6 fields
-  const cH = Math.max(30, consigneeH, rightTotalH);
-
-  box(M,leftW,cH);
+  box(M,leftW,leftBoxH);
   doc.setFontSize(6.5); doc.setTextColor(90,113,132); doc.text('CONSIGNEE',M+1.5,y+4);
   doc.setFontSize(9); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
   doc.text(document.getElementById('pf-buyer-name').value||'', M+1.5, y+9,{maxWidth:leftW-3});
   doc.setFont(undefined,'normal'); doc.setFontSize(7.8);
   doc.text(consigneeLines, M+1.5, y+13,{lineHeightFactor:1.3});
 
-  box(rightX,rightW,cH);
-  doc.line(rightX+halfW,y,rightX+halfW,y+10);
-  field(rightX,halfW,'COUNTRY OF DISPATCH', document.getElementById('pf-country-dispatch').value);
-  field(rightX+halfW,halfW,'COUNTRY OF FINAL DESTINATION', document.getElementById('pf-country-dest').value);
-  const npY = y+10;
-  doc.line(rightX, npY, rightX+rightW, npY);
-  doc.setFontSize(6.5); doc.setTextColor(90,113,132); doc.text('NOTIFY PARTY', rightX+1.5, npY+4);
+  doc.rect(rightX,rowTopY,rightW,rightBoxH);
+  doc.setFontSize(6.5); doc.setTextColor(90,113,132); doc.text('NOTIFY PARTY', rightX+1.5, rowTopY+4);
   doc.setFontSize(7.8); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
-  doc.text(notifyLines, rightX+1.5, npY+7, {lineHeightFactor:1.15});
+  doc.text(notifyLines, rightX+1.5, rowTopY+7, {lineHeightFactor:1.15});
   doc.setFont(undefined,'normal');
+  const countryY = rowTopY + notifyBlockH;
+  doc.line(rightX, countryY, rightX+rightW, countryY);
+  doc.line(rightX+halfW, countryY, rightX+halfW, countryY+countryRowH);
+  rowField(rightX,halfW,'COUNTRY OF DISPATCH', document.getElementById('pf-country-dispatch').value, countryY);
+  rowField(rightX+halfW,halfW,'COUNTRY OF FINAL DESTINATION', document.getElementById('pf-country-dest').value, countryY);
 
-  let cRowY = npY + notifyBlockH;
-  doc.line(rightX, cRowY, rightX+rightW, cRowY);
-  cFields.forEach(([label,val],i)=>{
-    rowField(rightX, rightW, label, val, cRowY);
-    cRowY += cRowH;
-    if(i<cFields.length-1) doc.line(rightX, cRowY, rightX+rightW, cRowY);
-  });
-  y+=cH;
+  // ---- Rows: shipment-terms grid ----
+  // Left column (Pre Carriage/Place of Receipt, Vessel/Port of Loading,
+  // Port of Discharge/Destination) continues immediately below Consignee;
+  // right column (Incoterm/mode, currency/payment terms, goods/brand, as
+  // compact stacked pairs) continues immediately below Country of
+  // Dispatch/Destination. Each column keeps its own running y so neither
+  // one waits on the other.
+  const gRowH = 10;
+  function leftGridRow(rowY,h,labelA,valA,labelB,valB){
+    const halfL = leftW/2;
+    doc.rect(M,rowY,halfL,h);
+    doc.rect(M+halfL,rowY,halfL,h);
+    rowField(M,halfL,labelA,valA,rowY);
+    rowField(M+halfL,halfL,labelB,valB,rowY);
+    return rowY+h;
+  }
+  function rightGridRow(rowY,h,labelC1,valC1,labelC2,valC2){
+    doc.rect(rightX,rowY,rightW,h);
+    const subH = h/2;
+    compactField(rightX,rightW,labelC1,valC1,rowY);
+    doc.line(rightX,rowY+subH,rightX+rightW,rowY+subH);
+    compactField(rightX,rightW,labelC2,valC2,rowY+subH);
+    return rowY+h;
+  }
 
-  // ---- Rows: Pre Carriage/Place of Receipt, Vessel/Port of Loading, Port of Discharge/Destination ----
-  // 3 rows x 2 columns, columns aligned with the Consignor/Consignee split above.
-  y = twoColRow(y,cRowH,'PRE CARRIAGE BY',document.getElementById('pf-pre-carriage').value,'PLACE OF RECEIPT BY PRE CARRIER',document.getElementById('pf-place-receipt').value);
-  y = twoColRow(y,cRowH,'VESSEL / FLIGHT NO.',document.getElementById('pf-vessel').value,'PORT OF LOADING',document.getElementById('pf-port-loading').value);
-  y = twoColRow(y,cRowH,'PORT OF DISCHARGE',document.getElementById('pf-port-discharge').value,'DESTINATION',document.getElementById('pf-destination').value);
+  let ly = rowTopY + leftBoxH;
+  ly = leftGridRow(ly,gRowH,
+    'PRE CARRIAGE BY',document.getElementById('pf-pre-carriage').value,
+    'PLACE OF RECEIPT BY PRE CARRIER',document.getElementById('pf-place-receipt').value);
+  ly = leftGridRow(ly,gRowH,
+    'VESSEL / FLIGHT NO.',document.getElementById('pf-vessel').value,
+    'PORT OF LOADING',document.getElementById('pf-port-loading').value);
+  ly = leftGridRow(ly,gRowH,
+    'PORT OF DISCHARGE',document.getElementById('pf-port-discharge').value,
+    'DESTINATION',document.getElementById('pf-destination').value);
 
-  y+=3;
+  let ry = rowTopY + rightBoxH;
+  ry = rightGridRow(ry,gRowH,
+    'FOB / C&F / CIF / CFR',document.getElementById('pf-incoterm').value,
+    'SEA / AIR / ROAD',document.getElementById('pf-mode').value);
+  ry = rightGridRow(ry,gRowH,
+    'CURRENCY OF INVOICE',document.getElementById('pf-currency').value,
+    'PAYMENT TERMS',document.getElementById('pf-payment-terms').value);
+  ry = rightGridRow(ry,gRowH,
+    'SHIPMENT OF GOODS',document.getElementById('pf-shipment-goods').value,
+    'BRAND NAME',document.getElementById('pf-brand').value);
+
+  y = Math.max(ly, ry) + 3;
 
   // ---- Line items table ----
   const t = proformaTotals();
