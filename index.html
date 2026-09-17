@@ -1499,7 +1499,7 @@ function generateProformaPDF(){
   const rowTopY = y;
 
   box(M,leftW,leftBoxH);
-  doc.setFontSize(6.5); doc.setTextColor(90,113,132); doc.text('CONSIGNEE',M+1.5,y+4);
+  doc.setFontSize(6.5); doc.setTextColor(90,113,132); doc.text('BILL TO',M+1.5,y+4);
   doc.setFontSize(9); doc.setTextColor(22,35,46); doc.setFont(undefined,'bold');
   doc.text(document.getElementById('pf-buyer-name').value||'', M+1.5, y+9,{maxWidth:leftW-3});
   doc.setFont(undefined,'normal'); doc.setFontSize(7.8);
